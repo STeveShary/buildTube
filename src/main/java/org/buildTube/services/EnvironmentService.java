@@ -15,16 +15,14 @@ public class EnvironmentService {
   public EnvironmentService() {
     fileProperties = new Properties();
     try {
-      fileProperties.load(new FileInputStream(new File("./buildTube.properties")));
+      fileProperties.load(new FileInputStream(new File("buildTube.properties")));
     } catch (IOException e) {
       e.printStackTrace();
     }
   }
 
   private String getProperty(String propertyKey) {
-    System.out.println("Getting Property: " + propertyKey);
-    if(fileProperties.contains(propertyKey)) {
-      System.out.println("Getting from file..");
+    if(fileProperties.containsKey(propertyKey)) {
       return fileProperties.get(propertyKey).toString();
     } else if(System.getProperties().contains(propertyKey)) {
       return System.getProperty(propertyKey);

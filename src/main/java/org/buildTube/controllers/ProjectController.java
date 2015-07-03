@@ -7,6 +7,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 public class ProjectController {
@@ -20,6 +21,7 @@ public class ProjectController {
 
 
   @RequestMapping("/project/{projectId}")
+  @ResponseBody
   public ListenableFuture<Project> getProject(@PathVariable String projectId) {
     return tcService.getProject(projectId);
   }

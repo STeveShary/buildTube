@@ -34,3 +34,7 @@ dependencies {
 
     testCompile("org.springframework.boot:spring-boot-starter-test")
 }
+
+applicationDefaultJvmArgs = [
+        '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005'
+]
