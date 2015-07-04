@@ -24,7 +24,6 @@ public class ProjectController {
     this.teamCityService = teamCityService;
   }
 
-
   @RequestMapping("/project/{projectId}")
   @ResponseBody
   public ListenableFuture<Project> getProject(@PathVariable String projectId) {

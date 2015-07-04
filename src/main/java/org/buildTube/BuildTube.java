@@ -1,6 +1,7 @@
 package org.buildTube;
 
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -19,7 +20,10 @@ public class BuildTube {
 
   @Bean(name = "jacksonObjectMapper")
   public ObjectMapper getMapper() {
-    return new JSONMapper();
+    ObjectMapper mapper = new ObjectMapper();
+    // Make it globally set that non-mapped fields are ignored.
+    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    return mapper;
   }
 
 }

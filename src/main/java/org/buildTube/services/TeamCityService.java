@@ -30,14 +30,6 @@ public class TeamCityService {
     return restUtil.doAsyncGet(buildGetAllProjectsUrl(), AllProjects.class);
   }
 
-  private String buildGetAllProjectsUrl() {
-    return String.format("%s/teamcity/httpAuth/app/rest/projects/", env.getTeamcityServerUrl());
-  }
-
-  private String buildGetProjectUrl(String projectId) {
-    return String.format("%s/teamcity/httpAuth/app/rest/projects/id:%s", env.getTeamcityServerUrl(), projectId);
-  }
-
   public ListenableFuture<List<Build>> getProjectBuilds(String projectId) {
     final SettableListenableFuture<List<Build>> projectBuilds = new SettableListenableFuture<>();
 
@@ -45,6 +37,14 @@ public class TeamCityService {
     project.addCallback(result -> fetchBuilds(getFirstBuildStep(result), projectBuilds),
         projectBuilds::setException);
     return projectBuilds;
+  }
+
+  private String buildGetAllProjectsUrl() {
+    return String.format("%s/teamcity/httpAuth/app/rest/projects/", env.getTeamcityServerUrl());
+  }
+
+  private String buildGetProjectUrl(String projectId) {
+    return String.format("%s/teamcity/httpAuth/app/rest/projects/id:%s", env.getTeamcityServerUrl(), projectId);
   }
 
   private void fetchBuilds(BuildStep firstBuildStep, SettableListenableFuture<List<Build>> returnFuture) {
