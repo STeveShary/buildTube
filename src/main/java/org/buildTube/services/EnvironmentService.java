@@ -22,9 +22,9 @@ public class EnvironmentService {
   }
 
   private String getProperty(String propertyKey) {
-    if(fileProperties.containsKey(propertyKey)) {
+    if (fileProperties.containsKey(propertyKey)) {
       return fileProperties.get(propertyKey).toString();
-    } else if(System.getProperties().contains(propertyKey)) {
+    } else if (System.getProperties().contains(propertyKey)) {
       return System.getProperty(propertyKey);
     } else {
       return System.getenv(propertyKey);

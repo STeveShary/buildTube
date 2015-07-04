@@ -20,16 +20,14 @@ import java.util.concurrent.ExecutionException;
 @Component
 public class RestUtil {
 
-  private final EnvironmentService env;
   private final AsyncRestTemplate asyncRestTemplate;
 
   @Autowired
   public RestUtil(EnvironmentService env) {
-    this.env = env;
-    if (this.env.useBasicAuth()) {
+    if (env.useBasicAuth()) {
       asyncRestTemplate = buildRestTemplateWithBasicAuth(
-          this.env.getBasicAuthUserName(),
-          this.env.getBasicAuthUserPassword());
+          env.getBasicAuthUserName(),
+          env.getBasicAuthUserPassword());
     } else {
       asyncRestTemplate = buildRestTemplate();
     }
@@ -59,8 +57,7 @@ public class RestUtil {
     HttpAsyncClientBuilder clientBuilder = HttpAsyncClientBuilder.create();
     clientBuilder.setDefaultCredentialsProvider(buildBasicAuthProvider(username, password));
     CloseableHttpAsyncClient client = clientBuilder.build();
-    AsyncRestTemplate restClient = new AsyncRestTemplate(new HttpComponentsAsyncClientHttpRequestFactory(client));
-    return restClient;
+    return new AsyncRestTemplate(new HttpComponentsAsyncClientHttpRequestFactory(client));
   }
 
   private CredentialsProvider buildBasicAuthProvider(String authUserName, String authPassword) {
