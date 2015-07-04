@@ -3,6 +3,7 @@ package org.buildTube.controllers;
 import org.buildTube.services.TeamCityService;
 import org.buildTube.tc.models.AllProjects;
 import org.buildTube.tc.models.Build;
+import org.buildTube.tc.models.BuildStep;
 import org.buildTube.tc.models.Project;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -40,6 +41,12 @@ public class ProjectController {
   @ResponseBody
   public ListenableFuture<List<Build>> getProjectBuilds(@PathVariable String projectId) {
     return teamCityService.getProjectBuilds(projectId);
+  }
+
+  @RequestMapping("/project/{projectId}/buildSteps")
+  @ResponseBody
+  public ListenableFuture<List<BuildStep>> getProjectBuildSteps(@PathVariable String projectId) {
+    return teamCityService.getProjectBuildSteps(projectId);
   }
 
 }

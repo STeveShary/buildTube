@@ -17,9 +17,9 @@ public class TeamCityService {
   private final RestUtil restUtil;
 
   @Autowired
-  public TeamCityService(EnvironmentService env, RestUtil restUtil, RestUtil restUtil1) {
+  public TeamCityService(EnvironmentService env, RestUtil restUtil) {
     this.env = env;
-    this.restUtil = restUtil1;
+    this.restUtil = restUtil;
   }
 
   public ListenableFuture<Project> getProject(String projectId) {
@@ -43,7 +43,7 @@ public class TeamCityService {
 
     ListenableFuture<Project> project = getProject(projectId);
     project.addCallback(result -> fetchBuilds(getFirstBuildStep(result), projectBuilds),
-        ex -> projectBuilds.setException(ex));
+        projectBuilds::setException);
     return projectBuilds;
   }
 
@@ -53,8 +53,7 @@ public class TeamCityService {
 
     buildsFuture.addCallback(
         result -> returnFuture.set(result.getBuild()),
-        ex -> returnFuture.setException(ex));
-
+        returnFuture::setException);
   }
 
   private String buildGetBuildStepBuild(BuildStep firstBuildStep) {
@@ -63,13 +62,28 @@ public class TeamCityService {
   }
 
   private BuildStep getFirstBuildStep(Project project) {
+    List<BuildStep> buildSteps = getBuildSteps(project);
+    if (buildSteps == null) return null;
+    return buildSteps.get(0);
+  }
+
+  private List<BuildStep> getBuildSteps(Project project) {
     List<BuildStep> buildSteps = project.getBuildTypes().getBuildType();
-    if(buildSteps == null ||
+    if (buildSteps == null ||
         buildSteps.size() == 0) {
       return null;
-    } else {
-      Collections.sort(buildSteps);
-      return buildSteps.get(0);
     }
+    Collections.sort(buildSteps);
+    return buildSteps;
+  }
+
+  public ListenableFuture<List<BuildStep>> getProjectBuildSteps(String projectId) {
+    SettableListenableFuture<List<BuildStep>> returnFuture = new SettableListenableFuture<>();
+    ListenableFuture<Project> project = getProject(projectId);
+    project.addCallback(
+        result -> returnFuture.set(getBuildSteps(result)),
+        returnFuture::setException);
+
+    return returnFuture;
   }
 }
