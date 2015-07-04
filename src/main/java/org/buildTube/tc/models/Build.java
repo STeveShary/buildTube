@@ -1,4 +1,4 @@
-package org.buildTube.tc.models.models;
+package org.buildTube.tc.models;
 
 import lombok.Data;
 

@@ -1,4 +1,4 @@
-package org.buildTube.tc.models.models;
+package org.buildTube.tc.models;
 
 import lombok.Data;
 
@@ -10,5 +10,5 @@ public class Project {
   private String href;
   private String webUrl;
 
-  private BuildType buildType;
+  private BuildType buildTypes;
 }
