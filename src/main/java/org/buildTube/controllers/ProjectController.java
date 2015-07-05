@@ -48,4 +48,10 @@ public class ProjectController {
     return teamCityService.getProjectBuildSteps(projectId);
   }
 
+  @RequestMapping("/project/{projectId}/build/{buildId}")
+  @ResponseBody
+  public ListenableFuture<List<Build>> getBuildsForBuildId(@PathVariable String projectId, @PathVariable String buildId) {
+    return teamCityService.getBuilds(projectId, buildId);
+  }
+
 }

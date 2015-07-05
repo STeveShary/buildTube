@@ -1,25 +1,30 @@
 package org.buildTube.services;
 
 import org.buildTube.tc.models.*;
+import org.buildTube.util.AsyncUtil;
 import org.buildTube.util.RestUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.SettableListenableFuture;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class TeamCityService {
 
   private final EnvironmentService env;
   private final RestUtil restUtil;
+  private final AsyncUtil asyncUtil;
 
   @Autowired
-  public TeamCityService(EnvironmentService env, RestUtil restUtil) {
+  public TeamCityService(EnvironmentService env, RestUtil restUtil, AsyncUtil asyncUtil) {
     this.env = env;
     this.restUtil = restUtil;
+    this.asyncUtil = asyncUtil;
   }
 
   public ListenableFuture<Project> getProject(String projectId) {
@@ -34,9 +39,65 @@ public class TeamCityService {
     final SettableListenableFuture<List<Build>> projectBuilds = new SettableListenableFuture<>();
 
     ListenableFuture<Project> project = getProject(projectId);
-    project.addCallback(result -> fetchBuilds(getFirstBuildStep(result), projectBuilds),
+    project.addCallback(result -> populateBuilds(getFirstBuildStep(result), projectBuilds),
         projectBuilds::setException);
     return projectBuilds;
+  }
+
+  public ListenableFuture<List<Build>> getBuilds(String projectId, String buildId) {
+    SettableListenableFuture<List<Build>> builds = new SettableListenableFuture<>();
+    ListenableFuture<List<BuildStep>> projectBuildSteps = getProjectBuildSteps(projectId);
+    projectBuildSteps.addCallback(
+        buildSteps -> {
+          List<ListenableFuture<StepBuilds>> allBuilds = new ArrayList<>();
+          buildSteps.forEach(buildStep -> {
+            allBuilds.add(fetchBuildsForStep(buildStep));
+          });
+          ListenableFuture<List<StepBuilds>> buildsOnFuture = asyncUtil.flatMapCommands(allBuilds);
+          buildsOnFuture.addCallback(
+              buildsList -> {
+                Collections.sort(buildsList);
+                List<Build> relatedBuilds = new ArrayList<>();
+                Build firstBuild = new Build();
+                firstBuild.setId(buildId);
+                relatedBuilds.add(firstBuild);
+                buildsList.forEach(currentBuilds -> {
+                  addRelatedBuildStep(currentBuilds.getBuild(), relatedBuilds);
+                });
+                relatedBuilds.remove(0);
+                builds.set(relatedBuilds);
+              },
+              builds::setException);
+        },
+        builds::setException);
+    return builds;
+  }
+
+  private void addRelatedBuildStep(List<Build> buildsInStep, List<Build> relatedBuilds) {
+    Optional<Build> relatedBuild = buildsInStep.stream().filter(build -> isBuildRelated(relatedBuilds, build)).findFirst();
+    if (relatedBuild.isPresent()) {
+      relatedBuilds.add(relatedBuild.get());
+    }
+  }
+
+  private boolean isBuildRelated(List<Build> relatedBuilds, Build build) {
+    if(relatedBuilds.stream().anyMatch(build1 -> build1.getId().equals(build.getId()))) {
+      return true;
+    }
+    try {
+      for (Build buildDependency : build.getSnapshotDependencies().getBuild()) {
+        if (relatedBuilds.stream().anyMatch(relatedBuild -> relatedBuild.getId().equals(buildDependency.getId()))) {
+          return true;
+        }
+      }
+      for (Build buildDependency : build.getArtifactDependencies().getBuild()) {
+        if (relatedBuilds.stream().anyMatch(relatedBuild -> relatedBuild.getId().equals(buildDependency.getId()))) {
+          return true;
+        }
+      }
+    } catch (Exception ignored) {
+    }
+    return false;
   }
 
   private String buildGetAllProjectsUrl() {
@@ -47,16 +108,20 @@ public class TeamCityService {
     return String.format("%s/teamcity/httpAuth/app/rest/projects/id:%s", env.getTeamcityServerUrl(), projectId);
   }
 
-  private void fetchBuilds(BuildStep firstBuildStep, SettableListenableFuture<List<Build>> returnFuture) {
-    ListenableFuture<StepBuilds> buildsFuture = restUtil.doAsyncGet(
-        buildGetBuildStepBuild(firstBuildStep), StepBuilds.class);
-
-    buildsFuture.addCallback(
+  private void populateBuilds(BuildStep buildStep, SettableListenableFuture<List<Build>> returnFuture) {
+    fetchBuildsForStep(buildStep).addCallback(
         result -> returnFuture.set(result.getBuild()),
         returnFuture::setException);
   }
 
-  private String buildGetBuildStepBuild(BuildStep firstBuildStep) {
+  private ListenableFuture<StepBuilds> fetchBuildsForStep(BuildStep buildStep) {
+    ListenableFuture<StepBuilds> stepBuildsListenableFuture = restUtil.doAsyncGet(buildGetBuildsForStepUrl(buildStep), StepBuilds.class);
+    stepBuildsListenableFuture.addCallback(result -> result.setBuildStepName(buildStep.getName()), ex -> {
+    });
+    return stepBuildsListenableFuture;
+  }
+
+  private String buildGetBuildsForStepUrl(BuildStep firstBuildStep) {
     return String.format("%s/teamcity/httpAuth/app/rest/buildTypes/id:%s/builds/",
         env.getTeamcityServerUrl(), firstBuildStep.getId());
   }
@@ -76,6 +141,7 @@ public class TeamCityService {
     Collections.sort(buildSteps);
     return buildSteps;
   }
+
 
   public ListenableFuture<List<BuildStep>> getProjectBuildSteps(String projectId) {
     SettableListenableFuture<List<BuildStep>> returnFuture = new SettableListenableFuture<>();
