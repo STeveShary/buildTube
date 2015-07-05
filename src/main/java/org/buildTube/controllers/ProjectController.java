@@ -10,6 +10,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.List;
@@ -48,10 +49,10 @@ public class ProjectController {
     return teamCityService.getProjectBuildSteps(projectId);
   }
 
-  @RequestMapping("/project/{projectId}/build/{buildId}")
+  @RequestMapping("/project/{projectId}/buildChain")
   @ResponseBody
-  public ListenableFuture<List<Build>> getBuildsForBuildId(@PathVariable String projectId, @PathVariable String buildId) {
-    return teamCityService.getBuilds(projectId, buildId);
+  public ListenableFuture<List<Build>> getBuildsForBuildId(@PathVariable String projectId, @RequestParam("baseBuildNumber") String buildNumber) {
+    return teamCityService.getBuilds(projectId, buildNumber);
   }
 
 }

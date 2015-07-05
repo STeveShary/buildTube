@@ -44,7 +44,7 @@ public class TeamCityService {
     return projectBuilds;
   }
 
-  public ListenableFuture<List<Build>> getBuilds(String projectId, String buildId) {
+  public ListenableFuture<List<Build>> getBuilds(String projectId, String baseBuildNumber) {
     SettableListenableFuture<List<Build>> builds = new SettableListenableFuture<>();
     ListenableFuture<List<BuildStep>> projectBuildSteps = getProjectBuildSteps(projectId);
     projectBuildSteps.addCallback(
@@ -58,13 +58,9 @@ public class TeamCityService {
               buildsList -> {
                 Collections.sort(buildsList);
                 List<Build> relatedBuilds = new ArrayList<>();
-                Build firstBuild = new Build();
-                firstBuild.setId(buildId);
-                relatedBuilds.add(firstBuild);
                 buildsList.forEach(currentBuilds -> {
-                  addRelatedBuildStep(currentBuilds.getBuild(), relatedBuilds);
+                  addRelatedBuildStep(currentBuilds.getBuild(), relatedBuilds, baseBuildNumber);
                 });
-                relatedBuilds.remove(0);
                 builds.set(relatedBuilds);
               },
               builds::setException);
@@ -73,31 +69,15 @@ public class TeamCityService {
     return builds;
   }
 
-  private void addRelatedBuildStep(List<Build> buildsInStep, List<Build> relatedBuilds) {
-    Optional<Build> relatedBuild = buildsInStep.stream().filter(build -> isBuildRelated(relatedBuilds, build)).findFirst();
+  private void addRelatedBuildStep(List<Build> buildsInStep, List<Build> relatedBuilds, String baseBuildNumber) {
+    Optional<Build> relatedBuild = buildsInStep.stream().filter(build -> isBuildRelated(baseBuildNumber, build)).findFirst();
     if (relatedBuild.isPresent()) {
       relatedBuilds.add(relatedBuild.get());
     }
   }
 
-  private boolean isBuildRelated(List<Build> relatedBuilds, Build build) {
-    if(relatedBuilds.stream().anyMatch(build1 -> build1.getId().equals(build.getId()))) {
-      return true;
-    }
-    try {
-      for (Build buildDependency : build.getSnapshotDependencies().getBuild()) {
-        if (relatedBuilds.stream().anyMatch(relatedBuild -> relatedBuild.getId().equals(buildDependency.getId()))) {
-          return true;
-        }
-      }
-      for (Build buildDependency : build.getArtifactDependencies().getBuild()) {
-        if (relatedBuilds.stream().anyMatch(relatedBuild -> relatedBuild.getId().equals(buildDependency.getId()))) {
-          return true;
-        }
-      }
-    } catch (Exception ignored) {
-    }
-    return false;
+  private boolean isBuildRelated(String baseBuildNumber, Build build) {
+    return build.getNumber().startsWith(baseBuildNumber);
   }
 
   private String buildGetAllProjectsUrl() {

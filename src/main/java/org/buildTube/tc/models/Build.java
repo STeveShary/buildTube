@@ -1,7 +1,6 @@
 package org.buildTube.tc.models;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
@@ -15,10 +14,6 @@ public class Build {
   private String href;
   private String webUrl;
   private String statusText;
-  @JsonProperty("snapshot-dependencies")
-  private BuildDependency snapshotDependencies;
-  @JsonProperty("artifact-dependencies")
-  private BuildDependency artifactDependencies;
 
   public boolean wasSuccessFullBuild() {
     return "SUCCESS".equalsIgnoreCase(status);
@@ -32,15 +27,4 @@ public class Build {
     return "finished".equalsIgnoreCase(state);
   }
 
-
-  @JsonProperty("snapshot-dependencies")
-  public void setSnapshotDependencies(BuildDependency snapshotDependencies) {
-    this.snapshotDependencies = snapshotDependencies;
-  }
-
-
-  @JsonProperty("artifact-dependencies")
-  public void setArtifactDependencies(BuildDependency artifactDependencies) {
-    this.artifactDependencies = artifactDependencies;
-  }
 }
